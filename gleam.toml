@@ -1,0 +1,22 @@
+name = "gleam_web_server"
+version = "1.0.0"
+
+# Required versions and package identifiers
+gleam = ">= 1.0.0"
+
+# Set the target to Erlang
+target = "erlang"
+
+# Dependencies
+[dependencies]
+gleam_stdlib = ">= 0.34.0 and < 0.40.0"
+gleam_http = ">= 3.6.0 and < 4.0.0"
+gleam_erlang = ">= 0.25.0 and < 0.30.0"
+gleam_json = ">= 1.0.0 and < 2.0.0"
+wisp = ">= 0.10.0 and < 1.0.0"
+mist = ">= 1.2.0 and < 2.0.0"
+nakai = ">= 0.1.0 and < 2.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
+

@@ -1,0 +1,25 @@
+*.beam
+*.ez
+build
+erl_crash.dump
+.gleam
+
+# Build artifacts
+/build/
+
+# Erlang
+.erlang.mk/
+deps/
+_build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
