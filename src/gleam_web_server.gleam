@@ -1,4 +1,5 @@
-import gleam/bytes_builder
+import database
+import gleam/bytes_tree
 import gleam/erlang/process
 import gleam/http
 import gleam/http/response.{type Response}
@@ -7,24 +8,39 @@ import gleam/json
 import mist
 import templates
 import wisp.{type Request}
+import wisp/wisp_mist
+
+/// Context to hold application state like database connection
+pub type Context {
+  Context(db: database.Connection)
+}
 
 /// Main entry point for the web server application
 pub fn main() {
   // Configure the logger for better debugging
   wisp.configure_logger()
 
+  // Initialize database
+  let assert Ok(db) = database.init()
+
+  // Create application context
+  let ctx = Context(db: db)
+
   // Define the secret key base for session management
   let secret_key_base = wisp.random_string(64)
 
+  // Create the handler
+  let handler =
+    wisp_mist.handler(fn(req) { handle_request(req, ctx) }, secret_key_base)
+
   // Start the web server on port 8000
   let assert Ok(_) =
-    wisp.mist_handler(handle_request, secret_key_base)
-    |> mist.new
+    mist.new(handler)
     |> mist.port(8000)
-    |> mist.start_http
+    |> mist.start
 
   io.println("🚀 Server started on http://localhost:8000")
-  
+
   // Keep the server running
   process.sleep_forever()
 }
@@ -33,25 +49,25 @@ pub fn main() {
 /// 
 /// This function receives all incoming requests and dispatches them
 /// to appropriate handlers based on the request path and method.
-pub fn handle_request(req: Request) -> Response(wisp.Body) {
+pub fn handle_request(req: Request, ctx: Context) -> Response(wisp.Body) {
   use _req <- middleware(req)
 
   case wisp.path_segments(req) {
     // GET /
-    [] -> home_page(req)
-    
+    [] -> home_page(req, ctx)
+
     // GET /api/hello
     ["api", "hello"] -> hello_api(req)
-    
+
     // GET /api/greet/:name
     ["api", "greet", name] -> greet_api(req, name)
-    
+
     // POST /api/echo
     ["api", "echo"] -> echo_api(req)
-    
+
     // GET /health
     ["health"] -> health_check(req)
-    
+
     // 404 Not Found for all other routes
     _ -> wisp.not_found()
   }
@@ -75,8 +91,15 @@ fn middleware(
 /// Handler for the home page
 /// 
 /// Returns a simple HTML page welcoming users to the web server.
-fn home_page(_req: Request) -> Response(wisp.Body) {
-  let html = templates.home_page()
+/// Increments and displays the view count from the database.
+fn home_page(_req: Request, ctx: Context) -> Response(wisp.Body) {
+  // Increment the view count and get the updated value
+  let view_count = case database.increment_view_count(ctx.db, "homepage") {
+    Ok(count) -> count
+    Error(_) -> 0
+  }
+
+  let html = templates.home_page(view_count)
 
   wisp.html_response(html, 200)
 }
@@ -89,7 +112,7 @@ fn hello_api(req: Request) -> Response(wisp.Body) {
     http.Get -> {
       let body =
         json.object([#("message", json.string("Hello from Gleam!"))])
-        |> json.to_string_builder
+        |> json.to_string
 
       wisp.json_response(body, 200)
     }
@@ -109,7 +132,7 @@ fn greet_api(req: Request, name: String) -> Response(wisp.Body) {
       let message = "Hello, " <> name <> "!"
       let body =
         json.object([#("message", json.string(message))])
-        |> json.to_string_builder
+        |> json.to_string
 
       wisp.json_response(body, 200)
     }
@@ -126,10 +149,10 @@ fn echo_api(req: Request) -> Response(wisp.Body) {
     http.Post -> {
       // Read the request body
       use body <- wisp.require_bit_array_body(req)
-      
+
       // Echo it back
-      let res_body = bytes_builder.from_bit_array(body)
-      
+      let res_body = bytes_tree.from_bit_array(body)
+
       response.new(200)
       |> response.prepend_header("content-type", "application/json")
       |> response.set_body(wisp.Bytes(res_body))
@@ -150,7 +173,7 @@ fn health_check(req: Request) -> Response(wisp.Body) {
           #("status", json.string("healthy")),
           #("service", json.string("gleam_web_server")),
         ])
-        |> json.to_string_builder
+        |> json.to_string
 
       wisp.json_response(body, 200)
     }

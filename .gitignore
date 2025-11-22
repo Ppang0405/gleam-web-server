@@ -23,3 +23,10 @@ _build/
 .DS_Store
 Thumbs.db
 
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+.specstory/
+.cursorindexingignore

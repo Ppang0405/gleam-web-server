@@ -1,14 +1,14 @@
-import gleam/string_builder.{type StringBuilder}
+import gleam/int
 import nakai
-import nakai/html.{type Node}
 import nakai/attr
+import nakai/html.{type Node}
 
 /// Renders a complete HTML page with a title and body content
 /// 
 /// Parameters:
 ///   - title: The page title
 ///   - body_content: List of HTML nodes for the body
-pub fn layout(title: String, body_content: List(Node)) -> StringBuilder {
+pub fn layout(title: String, body_content: List(Node)) -> String {
   html.Html([], [
     html.Head([
       html.meta([attr.charset("utf-8")]),
@@ -21,15 +21,27 @@ pub fn layout(title: String, body_content: List(Node)) -> StringBuilder {
     ]),
     html.Body([], body_content),
   ])
-  |> nakai.to_string_builder()
+  |> nakai.to_inline_string()
 }
 
 /// Renders the home page with API documentation
 /// 
-/// Displays a welcome message and lists all available endpoints.
-pub fn home_page() -> StringBuilder {
+/// Displays a welcome message, view count, and lists all available endpoints.
+/// 
+/// Parameters:
+///   - view_count: The total number of views for the homepage
+pub fn home_page(view_count: Int) -> String {
   layout("Gleam Web Server", [
     html.div([attr.class("container")], [
+      html.div([attr.class("view-counter")], [
+        html.span([attr.class("view-icon")], [html.Text("👁️")]),
+        html.span([attr.class("view-text")], [
+          html.Text("Total Views: "),
+        ]),
+        html.span([attr.class("view-count")], [
+          html.Text(int.to_string(view_count)),
+        ]),
+      ]),
       html.h1([], [html.Text("🚀 Gleam Web Server")]),
       html.p([], [
         html.Text("Welcome! Your Gleam web server is running successfully."),
@@ -123,6 +135,36 @@ fn base_styles() -> String {
       padding: 40px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }
+    .view-counter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      font-size: 18px;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      transition: transform 0.2s;
+    }
+    .view-counter:hover {
+      transform: scale(1.02);
+    }
+    .view-icon {
+      font-size: 24px;
+      margin-right: 10px;
+    }
+    .view-count {
+      font-size: 24px;
+      font-weight: 700;
+      margin-left: 5px;
+      color: #ffd700;
+    }
+    .view-text {
+      font-weight: 500;
+    }
     h1 { 
       color: #667eea;
       margin-bottom: 15px;
@@ -206,4 +248,3 @@ fn base_styles() -> String {
     }
   "
 }
-
